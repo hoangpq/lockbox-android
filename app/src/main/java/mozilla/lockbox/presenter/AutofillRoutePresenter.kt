@@ -42,7 +42,7 @@ class AutofillRoutePresenter(
     private val autofillStore: AutofillStore = AutofillStore.shared,
     private val dataStore: DataStore = DataStore.shared,
     private val pslSupport: PublicSuffixSupport = PublicSuffixSupport.shared
-) : Presenter() {
+) : RoutePresenter(activity, dispatcher, routeStore) {
     private lateinit var navController: NavController
 
     override fun onViewReady() {
@@ -83,66 +83,11 @@ class AutofillRoutePresenter(
     private fun route(action: RouteAction) {
         when (action) {
             is RouteAction.LockScreen -> navigateToFragment(R.id.fragment_locked)
-            is RouteAction.ItemList -> showDialogFragment(AutofillFilterFragment(),
+            is RouteAction.ItemList -> RoutePresenter.showDialog(AutofillFilterFragment(),
                 RouteAction.DialogFragment.AutofillSearchDialog
             )
             is RouteAction.DialogFragment.FingerprintDialog ->
-                showDialogFragment(FingerprintAuthDialogFragment(), action)
-        }
-    }
-
-    private fun navigateToFragment(@IdRes destinationId: Int, args: Bundle? = null) {
-        val src = navController.currentDestination ?: return
-        val srcId = src.id
-        if (srcId == destinationId && args == null) {
-            // No point in navigating if nothing has changed.
-            return
-        }
-
-        val transition = findTransitionId(srcId, destinationId) ?: destinationId
-
-        if (transition == destinationId) {
-            // Without being able to detect if we're in developer mode,
-            // it is too dangerous to RuntimeException.
-            val from = activity.resources.getResourceName(srcId)
-            val to = activity.resources.getResourceName(destinationId)
-            log.error(
-                "Cannot route from $from to $to. " +
-                    "This is a developer bug, fixable by adding an action to graph_autofill.xml"
-            )
-        } else {
-            val clearBackStack = src.getAction(transition)?.navOptions?.shouldLaunchSingleTop() ?: false
-            if (clearBackStack) {
-                while (navController.popBackStack()) {
-                    // NOP
-                }
-            }
-        }
-
-        try {
-            navController.navigate(transition, args)
-        } catch (e: IllegalArgumentException) {
-            log.error("This appears to be a bug in navController", e)
-            navController.navigate(destinationId, args)
-        }
-    }
-
-    private fun findTransitionId(@IdRes from: Int, @IdRes to: Int): Int? {
-        return when (Pair(from, to)) {
-            Pair(R.id.fragment_locked, R.id.fragment_filter) -> R.id.action_locked_to_filter
-            Pair(R.id.fragment_null, R.id.fragment_filter) -> R.id.action_to_filter
-            Pair(R.id.fragment_null, R.id.fragment_locked) -> R.id.action_to_locked
-            else -> null
-        }
-    }
-
-    private fun showDialogFragment(dialogFragment: DialogFragment, destination: RouteAction.DialogFragment) {
-        val fragmentManager = activity.supportFragmentManager
-        try {
-            dialogFragment.show(fragmentManager, dialogFragment.javaClass.name)
-            dialogFragment.setupDialog(destination.dialogTitle, destination.dialogSubtitle)
-        } catch (e: IllegalStateException) {
-            log.error("Could not show dialog", e)
+                RoutePresenter.showDialog(FingerprintAuthDialogFragment(), action)
         }
     }
 
