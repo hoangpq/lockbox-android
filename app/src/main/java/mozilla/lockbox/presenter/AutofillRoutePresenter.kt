@@ -76,11 +76,12 @@ class AutofillRoutePresenter(
     private fun route(action: RouteAction) {
         when (action) {
             is RouteAction.LockScreen -> navigateToFragment(R.id.fragment_locked)
-            is RouteAction.ItemList -> showDialogFragment(AutofillFilterFragment(),
+            is RouteAction.ItemList -> showAutofillDialogFragment(
+                AutofillFilterFragment(),
                 RouteAction.DialogFragment.AutofillSearchDialog
             )
             is RouteAction.DialogFragment.FingerprintDialog ->
-                showDialogFragment(FingerprintAuthDialogFragment(), action)
+                showAutofillDialogFragment(FingerprintAuthDialogFragment(), action)
         }
     }
 
@@ -101,7 +102,10 @@ class AutofillRoutePresenter(
         if (fillResponse == null) {
             activity.setResult(Activity.RESULT_CANCELED)
         } else {
-            activity.setResult(Activity.RESULT_OK, Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, fillResponse))
+            activity.setResult(
+                Activity.RESULT_OK,
+                Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, fillResponse)
+            )
         }
         activity.finish()
     }
